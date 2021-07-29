@@ -68,7 +68,7 @@ exports.handler = async function(context, event, callback) {
       response.say('Next Question');
     }
     //Now we loop around the function to get the next 10 questions
-    response.redirect('https://testfacebookfunctions-2019.twil.io/question');
+    response.redirect(`https://${context.DOMAIN_NAME}/questions`);
 
     return callback(null, response);
   }
