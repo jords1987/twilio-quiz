@@ -1,0 +1,199 @@
+{
+    "description": "IVR for creating a Flex voice task",
+    "states": [
+      {
+        "name": "Trigger",
+        "type": "trigger",
+        "transitions": [
+          {
+            "event": "incomingMessage"
+          },
+          {
+            "next": "play_game_question",
+            "event": "incomingCall"
+          },
+          {
+            "event": "incomingRequest"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": -10,
+            "y": 30
+          }
+        }
+      },
+      {
+        "name": "SendCallToAgent_nogame",
+        "type": "send-to-flex",
+        "transitions": [
+          {
+            "event": "callComplete"
+          },
+          {
+            "event": "failedToEnqueue"
+          },
+          {
+            "event": "callFailure"
+          }
+        ],
+        "properties": {
+          "offset": {
+            "x": -740,
+            "y": 1160
+          },
+          "workflow": "{#your_workflow_sid}",
+          "channel": "{#your_voice_channel_sid}",
+          "attributes": "{ \"type\": \"inbound\", \"name\": \"{{trigger.call.From}}\" }"
+        }
+      },
+      {
+        "name": "play_game_question",
+        "type": "gather-input-on-call",
+        "transitions": [
+          {
+            "next": "game_answer_key",
+            "event": "keypress"
+          },
+          {
+            "next": "game_answer_speech",
+            "event": "speech"
+          },
+          {
+            "next": "SendCallToAgent_nogame",
+            "event": "timeout"
+          }
+        ],
+        "properties": {
+          "voice": "Polly.Amy-Neural",
+          "offset": {
+            "x": -970,
+            "y": 290
+          },
+          "hints": "yes, no",
+          "finish_on_key": "",
+          "say": "Hi, We are dealing with a lot of calls right now and need to place you in a queue. If you would like to play a game while you wait, press 1 now or say yes. Otherwise, we will let you listen to some generic music.",
+          "language": "en-GB",
+          "stop_gather": true,
+          "profanity_filter": "true",
+          "timeout": 5,
+          "number_of_digits": 1,
+          "speech_timeout": "auto",
+          "loop": 1,
+          "gather_language": "en-GB"
+        }
+      },
+      {
+        "name": "game_answer_key",
+        "type": "split-based-on",
+        "transitions": [
+          {
+            "next": "SendCallToAgent_nogame",
+            "event": "noMatch"
+          },
+          {
+            "next": "game_intro",
+            "event": "match",
+            "conditions": [
+              {
+                "friendly_name": "If value equal_to 1",
+                "arguments": [
+                  "{{widgets.play_game_question.Digits}}"
+                ],
+                "type": "equal_to",
+                "value": "1"
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "input": "{{widgets.play_game_question.Digits}}",
+          "offset": {
+            "x": -670,
+            "y": 730
+          }
+        }
+      },
+      {
+        "name": "game_answer_speech",
+        "type": "split-based-on",
+        "transitions": [
+          {
+            "next": "SendCallToAgent_nogame",
+            "event": "noMatch"
+          },
+          {
+            "next": "game_intro",
+            "event": "match",
+            "conditions": [
+              {
+                "friendly_name": "If value equal_to yes",
+                "arguments": [
+                  "{{widgets.play_game_question.SpeechResult}}"
+                ],
+                "type": "equal_to",
+                "value": "yes"
+              }
+            ]
+          }
+        ],
+        "properties": {
+          "input": "{{widgets.play_game_question.SpeechResult}}",
+          "offset": {
+            "x": -310,
+            "y": 730
+          }
+        }
+      },
+      {
+        "name": "SendCallToAgentAndPlay",
+        "type": "send-to-flex",
+        "transitions": [
+          {
+            "event": "callComplete"
+          },
+          {
+            "event": "failedToEnqueue"
+          },
+          {
+            "event": "callFailure"
+          }
+        ],
+        "properties": {
+          "waitUrl": "https://{#your_serverless_runtime}.twil.io/questions",
+          "offset": {
+            "x": 50,
+            "y": 1250
+          },
+          "workflow": "{#your_workflow_sid}",
+          "channel": "{#your_voice_channel_sid}",
+          "attributes": "{ \"type\": \"inbound\", \"name\": \"{{trigger.call.From}}\" }",
+          "waitUrlMethod": "GET"
+        }
+      },
+      {
+        "name": "game_intro",
+        "type": "say-play",
+        "transitions": [
+          {
+            "next": "SendCallToAgentAndPlay",
+            "event": "audioComplete"
+          }
+        ],
+        "properties": {
+          "voice": "Polly.Amy-Neural",
+          "offset": {
+            "x": -20,
+            "y": 1030
+          },
+          "loop": 1,
+          "say": "Great! I will ask you some general knowledge questions, use your keypad to enter the answers.\nPress hash at any time to listen to rubbish music again",
+          "language": "en-GB"
+        }
+      }
+    ],
+    "initial_state": "Trigger",
+    "flags": {
+      "allow_concurrent_calls": true
+    }
+  }
